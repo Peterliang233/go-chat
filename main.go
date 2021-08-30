@@ -1,13 +1,19 @@
 package main
 
 import (
+	"github.com/Peterliang233/go-chat/config"
 	"github.com/Peterliang233/go-chat/database"
-	router2 "github.com/Peterliang233/go-chat/router"
+	"github.com/Peterliang233/go-chat/router"
 )
 
 func main() {
 	database.InitDatabase()
 
-	router := router2.InitRouter()
+	r := router.InitRouter()
 
+	err := r.Run(config.HttpPort)
+
+	if err != nil {
+		panic(err)
+	}
 }
