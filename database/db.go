@@ -14,13 +14,13 @@ var Db *gorm.DB
 // InitDatabase 初始化数据库的连接
 func InitDatabase() {
 	var err error
-	Db, err = gorm.Open(config.DbType,
+	Db, err = gorm.Open(config.DatabaseSetting.DbType,
 		fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
-			config.DbUser,
-			config.DbPassword,
-			config.DbHost,
-			config.DbPort,
-			config.DbName,
+			config.DatabaseSetting.DbUser,
+			config.DatabaseSetting.DbPassword,
+			config.DatabaseSetting.DbHost,
+			config.DatabaseSetting.DbPort,
+			config.DatabaseSetting.DbName,
 		))
 
 	if err != nil {

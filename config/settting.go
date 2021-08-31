@@ -3,47 +3,61 @@ package config
 import (
 	"fmt"
 	"gopkg.in/ini.v1"
+	"log"
 	"os"
+	"time"
 )
 
-var (
-	AppMode    string
-	HttpPort   string
+type server struct {
+	AppMode  string
+	HttpPort string
+}
+
+var ServerSetting = &server{}
+
+type database struct {
 	DbType     string
 	DbUser     string
 	DbPassword string
 	DbHost     string
 	DbPort     string
 	DbName     string
-)
+}
+
+var DatabaseSetting = &database{}
+
+type socket struct {
+	MaxMessageSize  int64
+	ReadBufferSize  int
+	WriteBufferSize int
+	WriteWait       time.Duration
+	PongWait        time.Duration
+}
+
+var SocketSetting = &socket{}
+
+var cfg *ini.File
 
 // init 读取配置文件数据
 func init() {
-	cfg, err := ini.Load("config/config.ini")
+	var err error
+	cfg, err = ini.Load("config/config.ini")
 
 	if err != nil {
 		fmt.Println("Open file error", err)
 		os.Exit(1)
 	}
 
-	LoadDatabase(cfg)
-
-	LoadServer(cfg)
+	mapTo("server", ServerSetting)
+	mapTo("database", DatabaseSetting)
+	mapTo("socket", SocketSetting)
 
 }
 
-// LoadServer 加载服务相关配置
-func LoadServer(file *ini.File) {
-	AppMode = file.Section("server").Key("AppMode").MustString("debug")
-	HttpPort = file.Section("server").Key("HttpPort").MustString(":9090")
-}
+func mapTo(s string, i interface{}) {
+	err := cfg.Section(s).MapTo(i)
 
-// LoadDatabase 加载数据库相关配置
-func LoadDatabase(file *ini.File) {
-	DbType = file.Section("database").Key("DbType").MustString("mysql")
-	DbUser = file.Section("database").Key("DbUser").MustString("root")
-	DbPassword = file.Section("database").Key("DbPassword").MustString("chatpassword")
-	DbHost = file.Section("database").Key("DbHost").MustString("localhost")
-	DbPort = file.Section("database").Key("DbPort").MustString("3306")
-	DbName = file.Section("database").Key("DbName").MustString("chat")
+	if err != nil {
+		log.Fatalf("%s cfg Load error", s)
+	}
 }
