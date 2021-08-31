@@ -13,7 +13,7 @@ func InitRouter() *gin.Engine {
 	router := gin.New()
 
 	router.Use(middlerware.Cors())
-	router.Use(middlerware.Cors())
+	router.Use(middlerware.Logger())
 
 	router.POST("/chat")
 
