@@ -4,6 +4,7 @@ import (
 	"github.com/Peterliang233/go-chat/config"
 	"github.com/Peterliang233/go-chat/database"
 	"github.com/Peterliang233/go-chat/router"
+	"github.com/Peterliang233/go-chat/service/socket"
 )
 
 func main() {
@@ -11,7 +12,11 @@ func main() {
 
 	r := router.InitRouter()
 
-	err := r.Run(config.HttpPort)
+	err := r.Run(config.ServerSetting.HttpPort)
+
+	hub := socket.NewHub()
+
+	go hub.Run()
 
 	if err != nil {
 		panic(err)

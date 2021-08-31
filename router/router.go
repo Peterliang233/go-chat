@@ -9,7 +9,7 @@ import (
 
 // InitRouter 初始化相关路由
 func InitRouter() *gin.Engine {
-	gin.SetMode(config.AppMode)
+	gin.SetMode(config.ServerSetting.AppMode)
 
 	router := gin.New()
 
