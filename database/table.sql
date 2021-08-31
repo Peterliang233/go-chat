@@ -12,13 +12,15 @@ CREATE TABLE `room` (
     id int primary key auto_increment,
     ownerID int not null,
     enterKey int not null,
-    foreign key (ownerID) references user (id),
+    foreign key (ownerID) references user (id)
 );
 
 CREATE TABLE `message` (
   id int primary key auto_increment,
-  owner int not null,
+  ownerID int not null,
   roomID int not null,
   sendTime datetime not null,
-  content message_text
+  content varchar(300),
+  foreign key (ownerID) references user(id),
+  foreign key (roomID) references room(id)
 );
