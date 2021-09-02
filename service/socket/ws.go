@@ -37,6 +37,7 @@ type Client struct {
 	roomID   []byte
 }
 
+// ReadPump 从消息中心读取信息
 func (c *Client) ReadPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -66,6 +67,7 @@ func (c *Client) ReadPump() {
 	}
 }
 
+// WritePump 向消息中心写入信息
 func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 
@@ -113,6 +115,7 @@ func (c *Client) WritePump() {
 	}
 }
 
+// ServerWs 开启socket通信
 func ServerWs(hub *Hub, c *gin.Context) {
 	var chat model.Room
 
