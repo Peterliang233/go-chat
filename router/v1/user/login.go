@@ -12,10 +12,11 @@ import (
 // AuthHandler 登录验证
 func AuthHandler(c *gin.Context) {
 	var user model.User
-	err := c.ShouldBindJSON(&user)
+
+	err := c.ShouldBind(&user)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"code": errmsg.Error,
 			"msg": map[string]interface{}{
 				"detail": "无效的参数",
@@ -28,7 +29,7 @@ func AuthHandler(c *gin.Context) {
 
 	code, err := Service.CheckLogin(&user)
 
-	if code == errmsg.ErrPassword {
+	if code != errmsg.Success {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": code,
 			"msg": map[string]interface{}{

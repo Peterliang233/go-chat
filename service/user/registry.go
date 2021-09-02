@@ -17,6 +17,7 @@ func CheckUsername(username string) (code int) {
 		Where("username = ?", username).
 		First(&user).
 		Error; err != nil {
+
 		if err == gorm.ErrRecordNotFound {
 			return errmsg.Success
 		}

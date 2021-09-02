@@ -13,7 +13,6 @@ func Registry(c *gin.Context) {
 	var u model.User
 	_ = c.ShouldBind(&u)
 
-	//fmt.Printf("%v\n",u)
 	code := Service.CheckUsername(u.Username)
 
 	if code != errmsg.Success {
