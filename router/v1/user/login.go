@@ -1,40 +1,50 @@
 package user
 
 import (
+	"github.com/Peterliang233/go-chat/errmsg"
+	"github.com/Peterliang233/go-chat/middlerware"
 	"github.com/Peterliang233/go-chat/model"
 	Service "github.com/Peterliang233/go-chat/service/user"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-// Login 用户登录
-func Login(c *gin.Context) {
-	var login model.User
-
-	_ = c.ShouldBind(&login)
-
-	// fmt.Printf("%v\n",login)
-
-	code, err := Service.CheckLogin(&login)
+// AuthHandler 登录验证
+func AuthHandler(c *gin.Context) {
+	var user model.User
+	err := c.ShouldBindJSON(&user)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": code,
-			"msg":  "登录失败",
-			"data": map[string]interface{}{
-				"username": login.Username,
+		c.JSON(http.StatusNotFound, gin.H{
+			"code": errmsg.Error,
+			"msg": map[string]interface{}{
+				"detail": "无效的参数",
+				"data":   "",
 			},
 		})
 
 		return
 	}
 
+	code, err := Service.CheckLogin(&user)
+
+	if code == errmsg.ErrPassword {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": code,
+			"msg": map[string]interface{}{
+				"status": errmsg.CodeMsg[code],
+			},
+		})
+	}
+
+	tokenString, code := middlerware.GenerateToken(user.Username)
+
 	c.JSON(http.StatusOK, gin.H{
-		"code": code,
-		"msg":  "登录成功",
+		"status": code,
+		"msg":    "登录成功",
 		"data": map[string]interface{}{
-			"username": login.Username,
+			"token":    tokenString,
+			"username": user.Username,
 		},
 	})
-
 }
