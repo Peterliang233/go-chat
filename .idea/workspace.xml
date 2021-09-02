@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="06f77958-072a-40c2-89dc-a41faaff2ff8" name="Default Changelist" comment=":zap: 添加jwt中间件验证">
-      <change afterPath="$PROJECT_DIR$/log/log" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/views/client.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/views/data.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/router/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/router/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/router/v1/user/login.go" beforeDir="false" afterPath="$PROJECT_DIR$/router/v1/user/login.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/router/v1/user/registry.go" beforeDir="false" afterPath="$PROJECT_DIR$/router/v1/user/registry.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/service/user/registry.go" beforeDir="false" afterPath="$PROJECT_DIR$/service/user/registry.go" afterDir="false" />
+    <list default="true" id="06f77958-072a-40c2-89dc-a41faaff2ff8" name="Default Changelist" comment=":zap: Vue框架实现前端交互界面">
+      <change beforePath="$PROJECT_DIR$/web/Vue-Demo" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +110,8 @@
     <MESSAGE value=":zap: 规范文件命名" />
     <MESSAGE value=":zap: 修改跨域限制" />
     <MESSAGE value=":zap: 添加jwt中间件验证" />
-    <option name="LAST_COMMIT_MESSAGE" value=":zap: 添加jwt中间件验证" />
+    <MESSAGE value=":zap: Vue框架实现前端交互界面" />
+    <option name="LAST_COMMIT_MESSAGE" value=":zap: Vue框架实现前端交互界面" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
