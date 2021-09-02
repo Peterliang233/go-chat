@@ -13,6 +13,8 @@ func Login(c *gin.Context) {
 
 	_ = c.ShouldBind(&login)
 
+	// fmt.Printf("%v\n",login)
+
 	code, err := Service.CheckLogin(&login)
 
 	if err != nil {

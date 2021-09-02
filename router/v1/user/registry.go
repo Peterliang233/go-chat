@@ -13,6 +13,7 @@ func Registry(c *gin.Context) {
 	var u model.User
 	_ = c.ShouldBind(&u)
 
+	//fmt.Printf("%v\n",u)
 	code := Service.CheckUsername(u.Username)
 
 	if code != errmsg.Success {
@@ -45,7 +46,7 @@ func Registry(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": code,
-		"msg":  errmsg.CodeMsg[code],
+		"msg":  "注册成功",
 		"data": map[string]interface{}{
 			"username": u.Username,
 		},
