@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -125,12 +126,19 @@ func ServerWs(hub *Hub, c *gin.Context) {
 	username, err := GetUsernameByID(chat.OwnerID)
 
 	if err != nil {
-		log.Fatalf("err %v", err)
+		log.Printf("err %v", err)
 	}
 
-	var upgrade websocket.Upgrader
+	var upgrade = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	// 升级协议
 
 	coon, err := upgrade.Upgrade(c.Writer, c.Request, nil)
+
 	if err != nil {
 		log.Fatalf("err %v", err)
 		return

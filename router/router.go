@@ -15,17 +15,14 @@ func InitRouter() *gin.Engine {
 	router := gin.New()
 
 	router.Use(middlerware.Cors())
+
 	router.Use(middlerware.Logger())
-	chat := router.Group("/api/chat")
 
 	hub := socket.NewHub()
 
-	chat.Use(middlerware.JWTAuthMiddleware())
-	{
-		router.GET("/ws", func(c *gin.Context) {
-			socket.ServerWs(hub, c)
-		})
-	}
+	router.GET("/ws", func(c *gin.Context) {
+		socket.ServerWs(hub, c)
+	})
 
 	router.POST("/sign_up", user.Registry)
 	router.POST("/sign_in", user.AuthHandler)
