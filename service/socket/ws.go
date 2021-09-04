@@ -1,173 +1,118 @@
 package socket
 
 import (
-	"bytes"
-	"github.com/Peterliang233/go-chat/config"
-	"github.com/Peterliang233/go-chat/database"
-	"github.com/Peterliang233/go-chat/model"
-	"github.com/gin-gonic/gin"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
-	"net/http"
-	"strconv"
-	"time"
 )
 
-var (
-	writeWait      = config.SocketSetting.WriteWait
-	pongWait       = config.SocketSetting.PongWait
-	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = config.SocketSetting.MaxMessageSize
-)
-
-var (
-	newLine = []byte{'\n'}
-	space   = []byte{' '}
-)
-
-var upgrade = websocket.Upgrader{
-	ReadBufferSize:  config.SocketSetting.ReadBufferSize,
-	WriteBufferSize: config.SocketSetting.WriteBufferSize,
+// ClientManager is a websocket manager
+type ClientManager struct {
+	Clients    map[string]*Client
+	Broadcast  chan []byte
+	Register   chan *Client
+	Unregister chan *Client
 }
 
+// Client is a websocket client
 type Client struct {
-	hub      *Hub
-	coon     *websocket.Conn
-	send     chan []byte
-	username []byte
-	roomID   []byte
+	ID     string
+	Socket *websocket.Conn
+	Send   chan []byte
 }
 
-// ReadPump 从消息中心读取信息
-func (c *Client) ReadPump() {
-	defer func() {
-		c.hub.unregister <- c
-		_ = c.coon.Close()
-	}()
+// Message is return msg
+type Message struct {
+	Sender    string `json:"sender,omitempty"`
+	Recipient string `json:"recipient,omitempty"`
+	Content   string `json:"content,omitempty"`
+}
 
-	c.coon.SetReadLimit(maxMessageSize)
-	_ = c.coon.SetReadDeadline(time.Now().Add(pongWait))
-	c.coon.SetPongHandler(func(string) error {
-		_ = c.coon.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
+// Manager define a ws server manager
+var Manager = ClientManager{
+	Broadcast:  make(chan []byte),
+	Register:   make(chan *Client),
+	Unregister: make(chan *Client),
+	Clients:    make(map[string]*Client),
+}
 
+// Start is  项目运行前, 协程开启start -> go Manager.Start()
+func (manager *ClientManager) Start() {
 	for {
-		_, message, err := c.coon.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Fatalf("Read Message error,%v", err)
+		log.Println("<---管道通信--->")
+		select {
+		case conn := <-Manager.Register:
+			log.Printf("新用户加入:%v", conn.ID)
+			Manager.Clients[conn.ID] = conn
+			jsonMessage, _ := json.Marshal(&Message{Content: "Successful connection to socket service"})
+			conn.Send <- jsonMessage
+		case conn := <-Manager.Unregister:
+			log.Printf("用户离开:%v", conn.ID)
+			if _, ok := Manager.Clients[conn.ID]; ok {
+				jsonMessage, _ := json.Marshal(&Message{Content: "A socket has disconnected"})
+				conn.Send <- jsonMessage
+				close(conn.Send)
+				delete(Manager.Clients, conn.ID)
 			}
-
-			break
+		case message := <-Manager.Broadcast:
+			MessageStruct := Message{}
+			json.Unmarshal(message, &MessageStruct)
+			for id, conn := range Manager.Clients {
+				if id != CreatId(MessageStruct.Recipient, MessageStruct.Sender) {
+					continue
+				}
+				select {
+				case conn.Send <- message:
+				default:
+					close(conn.Send)
+					delete(Manager.Clients, conn.ID)
+				}
+			}
 		}
-
-		message = bytes.TrimSpace(bytes.Replace(message, newLine, space, -1))
-
-		c.hub.broadcast <- message
 	}
 }
 
-// WritePump 向消息中心写入信息
-func (c *Client) WritePump() {
-	ticker := time.NewTicker(pingPeriod)
+// CreatId 创建一个用户id
+func CreatId(uid, touid string) string {
+	return uid + "_" + touid
+}
 
+// Read 读取消息
+func (c *Client) Read() {
 	defer func() {
-		ticker.Stop()
+		Manager.Unregister <- c
+		c.Socket.Close()
+	}()
 
-		_ = c.coon.Close()
+	for {
+		c.Socket.PongHandler()
+		_, message, err := c.Socket.ReadMessage()
+		if err != nil {
+			Manager.Unregister <- c
+			c.Socket.Close()
+			break
+		}
+		log.Printf("读取到客户端的信息:%s", string(message))
+		Manager.Broadcast <- message
+	}
+}
+
+// Write 写入消息
+func (c *Client) Write() {
+	defer func() {
+		c.Socket.Close()
 	}()
 
 	for {
 		select {
-		case message, ok := <-c.send:
-			_ = c.coon.SetWriteDeadline(time.Now().Add(writeWait))
-			if ok {
-				_ = c.coon.WriteMessage(websocket.CloseMessage, []byte{})
+		case message, ok := <-c.Send:
+			if !ok {
+				c.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
+			log.Printf("发送到到客户端的信息:%s", string(message))
 
-			w, err := c.coon.NextWriter(websocket.TextMessage)
-
-			if err != nil {
-				return
-			}
-
-			_, _ = w.Write(message)
-
-			n := len(message)
-
-			for i := 0; i < n; i++ {
-				_, _ = w.Write(newLine)
-				_, _ = w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				log.Printf("error,%v", err)
-				return
-			}
-		case <-ticker.C:
-			_ = c.coon.SetWriteDeadline(time.Now().Add(writeWait))
-
-			if err := c.coon.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+			c.Socket.WriteMessage(websocket.TextMessage, message)
 		}
 	}
-}
-
-// ServerWs 开启socket通信
-func ServerWs(hub *Hub, c *gin.Context) {
-	var chat model.Room
-
-	_ = c.ShouldBind(&chat)
-
-	roomID := strconv.Itoa(chat.ID)
-	username, err := GetUsernameByID(chat.OwnerID)
-
-	if err != nil {
-		log.Printf("err %v", err)
-	}
-
-	var upgrade = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-
-	// 升级协议
-
-	coon, err := upgrade.Upgrade(c.Writer, c.Request, nil)
-
-	if err != nil {
-		log.Fatalf("err %v", err)
-		return
-	}
-
-	client := &Client{
-		hub:      hub,
-		coon:     coon,
-		send:     make(chan []byte, 256),
-		username: []byte(username),
-		roomID:   []byte(roomID),
-	}
-
-	client.hub.register <- client
-
-	go client.ReadPump()
-	go client.WritePump()
-}
-
-// GetUsernameByID 通过用户id获取用户名
-func GetUsernameByID(id int) (username string, err error) {
-	var u model.User
-
-	if err := database.Db.
-		Where("id = ?", id).
-		First(&u).
-		Error; err != nil {
-		return "", err
-	}
-
-	return u.Username, nil
 }

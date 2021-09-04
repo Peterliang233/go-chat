@@ -3,8 +3,9 @@ package router
 import (
 	"github.com/Peterliang233/go-chat/config"
 	"github.com/Peterliang233/go-chat/middlerware"
+	"github.com/Peterliang233/go-chat/router/v1/socket"
 	"github.com/Peterliang233/go-chat/router/v1/user"
-	"github.com/Peterliang233/go-chat/service/socket"
+	Service "github.com/Peterliang233/go-chat/service/socket"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,16 +19,13 @@ func InitRouter() *gin.Engine {
 
 	router.Use(middlerware.Logger())
 
-	hub := socket.NewHub()
+	go Service.Manager.Start()
 
-	router.GET("/ws", func(c *gin.Context) {
-		socket.ServerWs(hub, c)
-	})
+	router.GET("/ws", socket.WsHandler)
 
 	router.POST("/sign_up", user.Registry)
-	router.POST("/sign_in", user.AuthHandler)
 
-	go hub.Run()
+	router.POST("/sign_in", user.AuthHandler)
 
 	return router
 }
