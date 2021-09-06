@@ -29,11 +29,6 @@ var (
 	space   = []byte{' '}
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub *Hub
@@ -50,52 +45,46 @@ type Client struct {
 	roomID []byte
 }
 
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
+// 从时间处理中心读取消息
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		_ = c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error { _ = c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
+
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
 		message = []byte(string(c.roomID) + "&" + string(c.username) + ":" + string(message))
 		fmt.Println(string(message))
-		c.hub.broadcast <- []byte(message)
+		c.hub.broadcast <- message
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
+// 从事物处理中心读取消息
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
+		_ = c.conn.Close()
 	}()
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -124,7 +113,8 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -153,23 +143,32 @@ func ServeWs(hub *Hub, c *gin.Context) {
 	// redisConn := pool.Get()
 	// defer redisConn.Close()
 	// 将网络请求变为websocket
-	var upgrader = websocket.Upgrader{
+	var upGrader = websocket.Upgrader{
 		// 解决跨域问题
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+
+	conn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
+
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	fmt.Println(userName)
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), username: []byte(userName), roomID: []byte(roomID)}
+	//fmt.Println("username" + userName)
+	//fmt.Println("roomID" + roomID)
+
+	client := &Client{
+		hub:      hub,
+		conn:     conn,
+		send:     make(chan []byte, 256),
+		username: []byte(userName),
+		roomID:   []byte(roomID),
+	}
+
 	client.hub.register <- client
 
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
 	go client.writePump()
 	go client.readPump()
 }
