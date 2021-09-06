@@ -55,6 +55,7 @@ func ParseToken(tokenString string) (*MyClaims, int) {
 func JWTAuthMiddleware() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
+
 		if authHeader == " " {
 			c.JSON(http.StatusOK, gin.H{
 				"status": errmsg.CodeMsg[errmsg.AuthEmpty],
@@ -64,6 +65,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 
 			return
 		}
+
 		parts := strings.SplitN(authHeader, " ", 2)
 
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
