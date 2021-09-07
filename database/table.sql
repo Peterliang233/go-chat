@@ -10,9 +10,7 @@ CREATE TABLE `user` (
 
 CREATE TABLE `room` (
     id int primary key auto_increment,
-    ownerID int not null,
     enterKey int not null,
-    foreign key (ownerID) references user (id)
 );
 
 CREATE TABLE `message` (
