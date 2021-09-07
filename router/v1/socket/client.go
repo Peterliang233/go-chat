@@ -64,7 +64,9 @@ func (c *Client) readPump() {
 
 			break
 		}
+
 		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
+
 		message = []byte(string(c.roomID) + "&" + string(c.username) + ":" + string(message))
 		fmt.Println(string(message))
 		c.hub.broadcast <- message
@@ -76,8 +78,11 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+
 		_ = c.conn.Close()
+
 	}()
+
 	for {
 		select {
 		case message, ok := <-c.send:
@@ -99,7 +104,7 @@ func (c *Client) writePump() {
 			// if msg[0] == string(c.hub.roomID[c]) {
 			// 	w.Write([]byte(msg[1]))
 			// }
-			w.Write(message)
+			_, _ = w.Write(message)
 			// Add queued chat messages to the current websocket message.
 			// n := len(c.send)
 			// for i := 0; i < n; i++ {
@@ -156,8 +161,10 @@ func ServeWs(hub *Hub, c *gin.Context) {
 		log.Println(err)
 		return
 	}
-	//fmt.Println("username" + userName)
-	//fmt.Println("roomID" + roomID)
+
+	// fmt.Println("username" + userName)
+
+	// fmt.Println("roomID" + roomID)
 
 	client := &Client{
 		hub:      hub,
@@ -170,5 +177,6 @@ func ServeWs(hub *Hub, c *gin.Context) {
 	client.hub.register <- client
 
 	go client.writePump()
+
 	go client.readPump()
 }

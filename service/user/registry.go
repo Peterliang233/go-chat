@@ -6,6 +6,7 @@ import (
 	"github.com/Peterliang233/go-chat/errmsg"
 	"github.com/Peterliang233/go-chat/model"
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/scrypt"
 	"log"
 )
@@ -15,10 +16,8 @@ func CheckUsername(username string) (code int) {
 	var user model.User
 	if err := database.Db.
 		Where("username = ?", username).
-		First(&user).
-		Error; err != nil {
-
-		if err == gorm.ErrRecordNotFound {
+		First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errmsg.Success
 		}
 

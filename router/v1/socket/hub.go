@@ -2,6 +2,9 @@ package socket
 
 import (
 	"fmt"
+	"github.com/Peterliang233/go-chat/model"
+	"github.com/Peterliang233/go-chat/service/chat"
+	"log"
 	"strings"
 )
 
@@ -53,8 +56,13 @@ func (h *Hub) Run() {
 				// 向信息所属的房间内的所有client 内添加send
 				// msg[0]为房间号 msg[1]为打印内容
 				msg := strings.Split(string(message), "&")
-				fmt.Println("msg[0] :" + msg[0])
-				fmt.Println("msg[1]:" + msg[1])
+				fmt.Println("房间号:" + msg[0])
+				mess := strings.Split(msg[1], ":")
+				fmt.Println("发言用户:", mess[0])
+				fmt.Println("发言内容:", mess[1])
+
+				storeMessage(msg[0], mess[0], mess[1])
+
 				if string(client.roomID) == msg[0] {
 					select {
 					case client.send <- []byte(msg[1]):
@@ -66,5 +74,35 @@ func (h *Hub) Run() {
 				}
 			}
 		}
+	}
+}
+
+// storeMessage 持久化用户的聊天消息记录
+func storeMessage(roomNumber, username, content string) {
+	ok, err := chat.FindRoom(roomNumber)
+
+	if !ok {
+		if err == nil {
+			err := chat.CreateRoom(roomNumber)
+			if err != nil {
+				log.Fatalf("房间创建失败, %v", err)
+			}
+		} else {
+			log.Fatalf("数据库查找房间失败，%v", err)
+		}
+	}
+
+	var message model.Message
+
+	message.RoomID, _ = chat.GetRoomID(roomNumber)
+
+	message.OwnerID, _ = chat.GetUserID(username)
+
+	message.Content = content
+
+	err = chat.CreateMessage(&message)
+
+	if err != nil {
+		log.Fatalf("创建消息失败，%v", err)
 	}
 }
