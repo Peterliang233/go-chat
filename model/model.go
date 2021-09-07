@@ -11,16 +11,15 @@ type User struct {
 
 // Room 房间表
 type Room struct {
-	ID       int `json:"id"`
-	OwnerID  int `json:"owner_id"`
-	EnterKey int `json:"enter_key"`
+	ID         int    `json:"id"`
+	RoomNumber string `json:"room_number"`
 }
 
 // Message 消息表
 type Message struct {
-	ID       int        `json:"id"`
-	OwnerID  int        `json:"owner_id"`
-	RoomID   int        `json:"room_id"`
-	SendTime *time.Time `json:"send_time"`
-	Content  string     `json:"content"`
+	ID        int        `json:"id"`
+	OwnerID   int        `json:"owner_id"`
+	RoomID    int        `json:"room_id"`
+	CreatedAt *time.Time `json:"created_at" gorm:"column:created_at"`
+	Content   string     `json:"content"`
 }
