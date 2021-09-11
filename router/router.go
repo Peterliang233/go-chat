@@ -4,6 +4,7 @@ import (
 	"github.com/Peterliang233/go-chat/config"
 	"github.com/Peterliang233/go-chat/middlerware"
 	"github.com/Peterliang233/go-chat/router/v1/socket"
+	"github.com/Peterliang233/go-chat/router/v1/upload"
 	"github.com/Peterliang233/go-chat/router/v1/user"
 	"github.com/gin-gonic/gin"
 )
@@ -25,6 +26,10 @@ func InitRouter() *gin.Engine {
 	router.GET("/ws", func(c *gin.Context) {
 		socket.ServeWs(hub, c)
 	})
+
+	router.POST("/upload", upload.PushFile)
+
+	router.GET("/download", upload.DownLoadFile)
 
 	router.POST("/sign_up", user.Registry)
 

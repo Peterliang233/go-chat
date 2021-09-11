@@ -7,6 +7,7 @@ const (
 	InvalidToken
 	AuthEmpty
 	TokenRunTimeError
+	FileTooBig
 	Success = 200
 	Error   = 300
 )
@@ -18,6 +19,7 @@ var CodeMsg = map[int]string{
 	InvalidToken:      "非法的token",
 	AuthEmpty:         "首部为空",
 	TokenRunTimeError: "token过期",
+	FileTooBig:        "文件过大",
 	Success:           "成功",
 	Error:             "失败",
 }
